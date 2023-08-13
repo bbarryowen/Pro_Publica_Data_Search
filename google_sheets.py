@@ -29,6 +29,3 @@ def insertNames(url):
 def insertData(payload, ein):
     wks.insert_rows(payload, 2)
     wks.update_cell(2, 2, ein)
-
-
-
