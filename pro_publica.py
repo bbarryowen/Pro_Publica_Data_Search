@@ -43,3 +43,11 @@ def getNames(url):
     names = [[element.find('irs:PersonNm', namespaces=namespace).text]
              for element in elements]
     return names
+
+
+def organizationSearch():
+    params = "GROUP HOMES OF ALABAMA VOA ELDERLY HOUSING"
+    searchURL = f"https://projects.propublica.org/nonprofits/api/v2/search.json?q=800000061"
+
+    response = requests.get(searchURL)
+    print(response.json())
