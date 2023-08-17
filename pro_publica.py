@@ -40,14 +40,18 @@ def getNames(url):
 
     elements = root.findall(
         './/irs:Form990PartVIISectionAGrp', namespaces=namespace)
-    names = [[element.find('irs:PersonNm', namespaces=namespace).text]
-             for element in elements]
+    names = [element.find(
+        'irs:PersonNm', namespaces=namespace).text for element in elements]
     return names
 
 
+def getBoardMemebers(names: str):
+    return {"A": names, "B": None, "C": None, "D": None, "E": None}, {"A": ["Contact Name"], "B": ["Phone"], "C": ["Email"], "D": ["Adress"], "E": ["Notes"]}
+
+
 def organizationSearch():
-    params = "GROUP HOMES OF ALABAMA VOA ELDERLY HOUSING"
-    searchURL = f"https://projects.propublica.org/nonprofits/api/v2/search.json?q=800000061"
+    params = "AHEPA 23 II, Inc."
+    searchURL = f"https://projects.propublica.org/nonprofits/api/v2/search.json?q=AHEPA%2023%20II%2C%20Inc."
 
     response = requests.get(searchURL)
     print(response.json())
