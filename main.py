@@ -1,13 +1,8 @@
-from google_sheets import insertNames
+from excel import getFullData
 
 
 def main():
-    insertNames(
-        "https://projects.propublica.org/nonprofits/organizations/912198760")
-    insertNames(
-        "https://projects.propublica.org/nonprofits/organizations/371341741")
-    insertNames(
-        "https://projects.propublica.org/nonprofits/organizations/271744129")
+    getFullData("EPISCOPAL PLACE")
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@ df2 = pd.read_excel('properties_output.xlsx')
 
 
 def getCompanyInfo(propertyName: str):
-    index = getIndex(propertyName)
+    index = getIndex(df1, "Property Name", propertyName)
     if isinstance(index, str):
         print(f"error: property: {propertyName} is not in file")
         exit()
@@ -32,26 +32,31 @@ def getCompanyInfo(propertyName: str):
     return companyInfo, boardMembersInfo, boardHeader
 
 
-def getIndex(propertyName: str):
-    condition = df1['Property Name'] == propertyName
-    filteredDF = df1[condition]
+def getIndex(dataFrame, searchColumn: str, searchValue):
+    condition = dataFrame[searchColumn] == searchValue
+    filteredDF = dataFrame[condition]
     index = int(filteredDF.index[0]) + 2
     if filteredDF.empty:
-        return f"{propertyName} not in file"
+        return f"{searchValue} not in file"
     else:
         return index
 
 
-companyDict, boardMembersDict, boardHeader = getCompanyInfo("GRUENING PARK")
-companyDF = pd.DataFrame(companyDict)
-boardDF = pd.DataFrame(boardMembersDict)
-boardHeadDF = pd.DataFrame(boardHeader)
+def getFullData(propertyName):
+    companyDict, boardMembersDict, boardHeader = getCompanyInfo(propertyName)
+    propertyLocation = getIndex(df2, "A", companyDict["A"][1])
+    if isinstance(propertyLocation, int):
+        print(f"property: {propertyName} is in file need to update")
+        exit()
+    companyDF = pd.DataFrame(companyDict)
+    boardDF = pd.DataFrame(boardMembersDict)
+    boardHeadDF = pd.DataFrame(boardHeader)
 
-combinedDF = pd.concat(
-    [companyDF, boardHeadDF, boardDF, df2], ignore_index=True)
+    combinedDF = pd.concat(
+        [companyDF, boardHeadDF, boardDF, df2], ignore_index=True)
 
-try:
-    combinedDF.to_excel('properties_output.xlsx', index=False)
-    print("Excel file saved successfully.")
-except Exception as e:
-    print("Error while saving Excel file:", e)
+    try:
+        combinedDF.to_excel('properties_output.xlsx', index=False)
+        print("Excel file saved successfully.")
+    except Exception as e:
+        print("Error while saving Excel file:", e)
