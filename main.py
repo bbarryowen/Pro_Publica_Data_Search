@@ -1,8 +1,9 @@
-from excel import getFullData
+from excel import getFullDataFromList, getPropertyNames
 
 
 def main():
-    getFullData("EPISCOPAL PLACE")
+    # getFullDataFromList(getPropertyNames()[0:11])
+    getFullDataFromList(["PARK'S EDGE"])
 
 
 if __name__ == "__main__":

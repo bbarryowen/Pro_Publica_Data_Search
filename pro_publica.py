@@ -10,6 +10,8 @@ def searchByClass(webURL):
         return None
     soup = BeautifulSoup(response.text, 'html.parser')
     a_element = soup.find('a', class_='action xml')
+    if a_element is None:
+        return None, None
     href = a_element.get('href')
     formType = a_element.text
     return href, formType
@@ -21,10 +23,11 @@ def getNames(url):
     href, formType = searchByClass(pageURL)
 
     if href is None:
-        exit()
+        print(f"could not find button for {url}")
+        return None
     if formType != str(990):
         print("program not yet capable of handling non 990 forms")
-        exit()
+        return None
 
     xmlURL = f'https://projects.propublica.org{href}'
     response = requests.get(xmlURL, allow_redirects=True)
@@ -33,20 +36,30 @@ def getNames(url):
         # print(xmlContent)
     else:
         print(f"failed to fetch xml file {response.status_code}")
-        exit()
+        return
     root = ET.fromstring(xmlContent)
 
     namespace = {'irs': 'http://www.irs.gov/efile'}
 
     elements = root.findall(
         './/irs:Form990PartVIISectionAGrp', namespaces=namespace)
-    names = [element.find(
-        'irs:PersonNm', namespaces=namespace).text for element in elements]
+    count = 0
+    names = []
+    for element in elements:
+        person = element.find('irs:PersonNm', namespaces=namespace)
+        if person is None:
+            count += 1
+        else:
+            names.append(person.text)
+
+    if count > 0:
+        print(f"{count} board members were not recorded for url: {url}")
+
     return names
 
 
 def getBoardMemebers(names: str):
-    return {"A": names, "B": None, "C": None, "D": None, "E": None}, {"A": ["Contact Name"], "B": ["Phone"], "C": ["Email"], "D": ["Adress"], "E": ["Notes"]}
+    return {"A": names, "B": None, "C": None, "D": None, "E": None}
 
 
 def organizationSearch():
