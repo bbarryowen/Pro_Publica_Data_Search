@@ -26,12 +26,15 @@ def getCompanyInfo(propertyName: str):
 
     if not isinstance(companyInfo["K"][1], str):
         print(f"property: {propertyName} does not have link")
-        errorProperties.append(propertyName)
-        return None, None, None
+        errorProperties.append(f"{propertyName}: no link")
+        return None, None
     names, year, notAdded = getNames(companyInfo["K"][1])
 
-    if names is None or not isinstance(notAdded, int):
-        errorProperties.append(propertyName)
+    if names is None:
+        errorProperties.append(f"{propertyName}: no button or not 990")
+        return companyInfo, None
+    if notAdded > 0:
+        errorProperties.append(f"{propertyName}: {notAdded} names not added")
         return companyInfo, None
 
     companyInfo["L"] = ["Year", year]
