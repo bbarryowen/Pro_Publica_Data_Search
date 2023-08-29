@@ -2,9 +2,6 @@ import pandas as pd
 from pro_publica import getBoardMemebers, getNames
 
 
-df2 = pd.read_excel('properties_output.xlsx')
-
-
 def getCompanyInfo(propertyName: str):
     index = getIndex(df1, "Property Name", propertyName)
     if isinstance(index, str):
@@ -59,10 +56,10 @@ def getFullData(propertyName):
     companyDF = pd.DataFrame(companyDict)
 
     if boardMembersDict is None:
-        return pd.concat([companyDF, boardHeadDF, blankDF, df2])
+        return pd.concat([companyDF, boardHeadDF, blankDF])
 
     boardDF = pd.DataFrame(boardMembersDict)
-    return pd.concat([companyDF, boardHeadDF, boardDF, blankDF, df2], ignore_index=True)
+    return pd.concat([companyDF, boardHeadDF, boardDF, blankDF], ignore_index=True)
 
 
 def getFullDataFromFile(filePath, fileName):
