@@ -6,7 +6,7 @@ def getCompanyInfo(propertyName: str):
     index = getIndex(df1, "Property Name", propertyName)
     if isinstance(index, str):
         print(f"error: property: {propertyName} is not in file")
-        return None
+        return None, None
 
     try:
         companyInfo = {"A": ["#", df1.loc[index, "#"]],
@@ -22,6 +22,7 @@ def getCompanyInfo(propertyName: str):
                        "K": ["ProPublica Link", df1.loc[index, "ProPublica Link"]]}
     except KeyError:
         print("error: specified columns defined in documentation do not exist; please review documentation.")
+        exit()
 
     if not isinstance(companyInfo["K"][1], str):
         print(f"property: {propertyName} does not have link")
