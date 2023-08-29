@@ -1,5 +1,6 @@
 import PySimpleGUI as sg
 import subprocess
+import os
 
 layout = [
     [sg.Text("Select a file:")],
@@ -19,7 +20,10 @@ while True:
     elif event == "Load":
         file_path = values["file_path"]
         file_name = values["default_file"]
-        sg.popup(f"Selected file: {file_path}")
-        subprocess.run(["python", "main.py", file_path, file_name])
+        if os.path.exists(file_name):
+            sg.popup(f"Output file name already exists. Please choose new name.")
+        else:
+            sg.popup(f"Selected file: {file_path}")
+            subprocess.run(["python", "main.py", file_path, file_name])
 
 window.close()
