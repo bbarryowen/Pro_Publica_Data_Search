@@ -22,16 +22,19 @@ def getCompanyInfo(propertyName: str):
                        "K": ["ProPublica Link", df1.loc[index, "ProPublica Link"]]}
     except KeyError:
         print("error: specified columns defined in documentation do not exist; please review documentation.")
-        exit()
+        exit(1)
 
     if not isinstance(companyInfo["K"][1], str):
         print(f"property: {propertyName} does not have link")
+        errorProperties.append(propertyName)
         return None, None, None
-    names, year = getNames(companyInfo["K"][1])
-    if year is not None:
-        companyInfo["L"] = ["Year", year]
-    if names is None:
+    names, year, notAdded = getNames(companyInfo["K"][1])
+
+    if names is None or not isinstance(notAdded, int):
+        errorProperties.append(propertyName)
         return companyInfo, None
+
+    companyInfo["L"] = ["Year", year]
     boardMembersInfo = getBoardMemebers(names)
     return companyInfo, boardMembersInfo
 
@@ -66,6 +69,9 @@ def getFullData(propertyName):
 def getFullDataFromFile(filePath, fileName):
     global df1
     df1 = pd.read_excel(filePath)
+    global errorProperties
+    errorProperties = ["Properties with errors:"]
+
     propertyList = getPropertyNames(df1)
     dfList = []
     for property in propertyList:
@@ -74,12 +80,15 @@ def getFullDataFromFile(filePath, fileName):
         if fullData is not None:
             dfList.append(fullData)
     if len(dfList) != 0:
+        dfList.append(pd.DataFrame({"A": errorProperties}))
         combinedDFs = pd.concat(dfList, ignore_index=True)
         try:
             combinedDFs.to_excel(fileName, index=False)
             print(f"Excel file saved successfully: {fileName}")
+            exit(0)
         except Exception as e:
             print("Error while saving Excel file:", e)
+            exit(2)
 
 
 def getPropertyNames(inDF):
@@ -87,5 +96,5 @@ def getPropertyNames(inDF):
         propertyNameList = inDF["Property Name"]
     except KeyError:
         print(f"error: inputed file does not have column: 'Property Name' please review documentation.")
-        exit()
+        exit(1)
     return propertyNameList

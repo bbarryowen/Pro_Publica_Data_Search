@@ -24,10 +24,10 @@ def getNames(url):
 
     if href is None:
         print(f"could not find button for {url}")
-        return None, None
+        return None, None, None
     if formType != str(990):
         print("program not yet capable of handling non 990 forms")
-        return None, None
+        return None, None, None
 
     xmlURL = f'https://projects.propublica.org{href}'
     response = requests.get(xmlURL, allow_redirects=True)
@@ -36,7 +36,7 @@ def getNames(url):
         # print(xmlContent)
     else:
         print(f"failed to fetch xml file {response.status_code}")
-        return
+        return None, None, None
     root = ET.fromstring(xmlContent)
 
     namespace = {'irs': 'http://www.irs.gov/efile'}
@@ -59,16 +59,8 @@ def getNames(url):
         './/irs:TaxPeriodBeginDt', namespaces=namespace)
     year = yearElement.text[0:4]
 
-    return names, year
+    return names, year, count
 
 
 def getBoardMemebers(names: str):
     return {"A": names, "B": None, "C": None, "D": None, "E": None}
-
-
-def organizationSearch():
-    params = "AHEPA 23 II, Inc."
-    searchURL = f"https://projects.propublica.org/nonprofits/api/v2/search.json?q=AHEPA%2023%20II%2C%20Inc."
-
-    response = requests.get(searchURL)
-    print(response.json())
