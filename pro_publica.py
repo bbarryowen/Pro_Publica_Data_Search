@@ -24,10 +24,10 @@ def getNames(url):
 
     if href is None:
         print(f"could not find button for {url}")
-        return None
+        return None, None
     if formType != str(990):
         print("program not yet capable of handling non 990 forms")
-        return None
+        return None, None
 
     xmlURL = f'https://projects.propublica.org{href}'
     response = requests.get(xmlURL, allow_redirects=True)
@@ -41,11 +41,11 @@ def getNames(url):
 
     namespace = {'irs': 'http://www.irs.gov/efile'}
 
-    elements = root.findall(
+    nameElements = root.findall(
         './/irs:Form990PartVIISectionAGrp', namespaces=namespace)
     count = 0
     names = []
-    for element in elements:
+    for element in nameElements:
         person = element.find('irs:PersonNm', namespaces=namespace)
         if person is None:
             count += 1
@@ -55,7 +55,11 @@ def getNames(url):
     if count > 0:
         print(f"{count} board members were not recorded for url: {url}")
 
-    return names
+    yearElement: str = root.find(
+        './/irs:TaxPeriodBeginDt', namespaces=namespace)
+    year = yearElement.text[0:4]
+
+    return names, year
 
 
 def getBoardMemebers(names: str):

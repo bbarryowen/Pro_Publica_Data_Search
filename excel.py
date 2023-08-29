@@ -1,12 +1,5 @@
-from math import isnan
 import pandas as pd
-import openpyxl
-
 from pro_publica import getBoardMemebers, getNames
-
-filename = 'properties_output.xlsx'
-workbook = openpyxl.load_workbook(filename)
-worksheet = workbook.active
 
 df1 = pd.read_excel('properties_sample_partial.xlsx')
 df2 = pd.read_excel('properties_output.xlsx')
@@ -32,7 +25,9 @@ def getCompanyInfo(propertyName: str):
     if not isinstance(companyInfo["K"][1], str):
         print(f"property: {propertyName} does not have link")
         return None, None, None
-    names = getNames(companyInfo["K"][1])
+    names, year = getNames(companyInfo["K"][1])
+    if year is not None:
+        companyInfo["L"] = ["Year", year]
     if names is None:
         return companyInfo, None
     boardMembersInfo = getBoardMemebers(names)
@@ -59,21 +54,20 @@ def getFullData(propertyName):
     companyDict, boardMembersDict = getCompanyInfo(propertyName)
     companyDF = pd.DataFrame(companyDict)
 
-    propertyLocation = getIndex(df2, "A", companyDict["A"][1])
+    # propertyLocation = getIndex(df2, "A", companyDict["A"][1])
 
-    # will be an issue if last property is updated
+    """# will be an issue if last property is updated
     if isinstance(propertyLocation, int):
         prevNames = []
-        endRow = None
+        rowIndexes = []
         for idx, name in enumerate(df2["A"][propertyLocation + 2:], start=propertyLocation + 2):
             if name == "#":
-                endRow = idx
                 break
+            rowIndexes.append(idx)
             prevNames.append(name)
 
-        df2Edited = df2.drop(df2.index[propertyLocation: endRow + 1])
-        """if isnan(prevNames[-1]):
-            prevNames.pop()"""
+        df2Edited = df2.drop(
+            df2.index[propertyLocation - 1: rowIndexes[-1] + 1])
         if boardMembersDict is not None:
             currNames = boardMembersDict["A"]
         else:
@@ -88,8 +82,8 @@ def getFullData(propertyName):
         currDF = pd.DataFrame(currDict)
         deletedDF = pd.DataFrame(deletedDict)
 
-        print("trying update")
-        return pd.concat([companyDF, boardHeadDF, currDF, deletedDF, df2Edited], ignore_index=True)
+        print(f"updating: {propertyName}")
+        return pd.concat([companyDF, boardHeadDF, currDF, df2Edited], ignore_index=True)"""
 
     if boardMembersDict is None:
         return pd.concat([companyDF, boardHeadDF, blankDF, df2])
@@ -98,21 +92,23 @@ def getFullData(propertyName):
     return pd.concat([companyDF, boardHeadDF, boardDF, blankDF, df2], ignore_index=True)
 
 
-def getFullDataFromList(propertyList):
+def getFullDataFromFile(filePath, fileName):
+    dfFile = pd.read_excel(filePath)
+    propertyList = getPropertyNames(dfFile)
     dfList = []
     for property in propertyList:
-        print(property)
+        print(f"added: {property}")
         fullData = getFullData(property)
         if fullData is not None:
             dfList.append(fullData)
     if len(dfList) != 0:
         combinedDFs = pd.concat(dfList, ignore_index=True)
         try:
-            combinedDFs.to_excel('properties_output.xlsx', index=False)
-            print("Excel file saved successfully.")
+            combinedDFs.to_excel(fileName, index=False)
+            print(f"Excel file saved successfully: {fileName}")
         except Exception as e:
             print("Error while saving Excel file:", e)
 
 
-def getPropertyNames():
-    return df1["Property Name"]
+def getPropertyNames(inDF):
+    return inDF["Property Name"]
