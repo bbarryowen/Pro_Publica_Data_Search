@@ -1,5 +1,6 @@
 import pandas as pd
 from pro_publica import getBoardMemebers, getNames
+from sys import exit
 
 
 def getCompanyInfo(propertyName: str):
@@ -57,19 +58,16 @@ def getFullData(propertyName):
                  "F": [""], "G": [""], "H": [""], "I": [""], "J": [""], "K": [""]}
     boardHeaderDict = {"A": ["Contact Name"], "B": [
         "Phone"], "C": ["Email"], "D": ["Adress"], "E": ["Notes"]}
-    boardHeadDF = pd.DataFrame.from_dict(
-        boardHeaderDict, orient='index', columns=['Header', 'Value'])
-    blankDF = pd.DataFrame.from_dict(
-        blankDict, orient='index', columns=['Header', 'Value'])
+    boardHeadDF = pd.DataFrame(boardHeaderDict)
+    blankDF = pd.DataFrame(
+        blankDict)
     companyDict, boardMembersDict = getCompanyInfo(propertyName)
-    companyDF = pd.DataFrame.from_dict(
-        companyDict, orient='index', columns=['Header', 'Value'])
+    companyDF = pd.DataFrame(companyDict)
 
     if boardMembersDict is None:
         return pd.concat([companyDF, boardHeadDF, blankDF])
 
-    boardDF = pd.DataFrame.from_dict(
-        boardMembersDict, orient='index', columns=['Header', 'Value'])
+    boardDF = pd.DataFrame(boardMembersDict)
     return pd.concat([companyDF, boardHeadDF, boardDF, blankDF], ignore_index=True)
 
 
@@ -87,11 +85,10 @@ def getFullDataFromFile(filePath, fileName):
         if fullData is not None:
             dfList.append(fullData)
     if len(dfList) != 0:
-        dfList.append(pd.DataFrame.from_dict(
-            {"A": errorProperties}), orient='index', columns=['Header', 'Value'])
+        dfList.append(pd.DataFrame({"A": errorProperties}))
         combinedDFs = pd.concat(dfList, ignore_index=True)
         try:
-            combinedDFs.to_excel(fileName, index=False)
+            combinedDFs.to_excel(fileName, index=False, header=False)
             print(f"Excel file saved successfully: {fileName}")
             exit(0)
         except Exception as e:
