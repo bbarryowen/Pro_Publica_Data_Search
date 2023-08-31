@@ -22,7 +22,7 @@ def getCompanyInfo(propertyName: str):
                        "K": ["ProPublica Link", df1.loc[index, "ProPublica Link"]]}
     except KeyError:
         print("error: specified columns defined in documentation do not exist; please review documentation.")
-        exit(1)
+        exit(4)
 
     if not isinstance(companyInfo["K"][1], str):
         print(f"property: {propertyName} does not have link")
@@ -57,15 +57,19 @@ def getFullData(propertyName):
                  "F": [""], "G": [""], "H": [""], "I": [""], "J": [""], "K": [""]}
     boardHeaderDict = {"A": ["Contact Name"], "B": [
         "Phone"], "C": ["Email"], "D": ["Adress"], "E": ["Notes"]}
-    boardHeadDF = pd.DataFrame(boardHeaderDict)
-    blankDF = pd.DataFrame(blankDict)
+    boardHeadDF = pd.DataFrame.from_dict(
+        boardHeaderDict, orient='index', columns=['Header', 'Value'])
+    blankDF = pd.DataFrame.from_dict(
+        blankDict, orient='index', columns=['Header', 'Value'])
     companyDict, boardMembersDict = getCompanyInfo(propertyName)
-    companyDF = pd.DataFrame(companyDict)
+    companyDF = pd.DataFrame.from_dict(
+        companyDict, orient='index', columns=['Header', 'Value'])
 
     if boardMembersDict is None:
         return pd.concat([companyDF, boardHeadDF, blankDF])
 
-    boardDF = pd.DataFrame(boardMembersDict)
+    boardDF = pd.DataFrame.from_dict(
+        boardMembersDict, orient='index', columns=['Header', 'Value'])
     return pd.concat([companyDF, boardHeadDF, boardDF, blankDF], ignore_index=True)
 
 
@@ -83,7 +87,8 @@ def getFullDataFromFile(filePath, fileName):
         if fullData is not None:
             dfList.append(fullData)
     if len(dfList) != 0:
-        dfList.append(pd.DataFrame({"A": errorProperties}))
+        dfList.append(pd.DataFrame.from_dict(
+            {"A": errorProperties}), orient='index', columns=['Header', 'Value'])
         combinedDFs = pd.concat(dfList, ignore_index=True)
         try:
             combinedDFs.to_excel(fileName, index=False)
@@ -91,7 +96,7 @@ def getFullDataFromFile(filePath, fileName):
             exit(0)
         except Exception as e:
             print("Error while saving Excel file:", e)
-            exit(2)
+            exit(3)
 
 
 def getPropertyNames(inDF):
@@ -99,5 +104,5 @@ def getPropertyNames(inDF):
         propertyNameList = inDF["Property Name"]
     except KeyError:
         print(f"error: inputed file does not have column: 'Property Name' please review documentation.")
-        exit(1)
+        exit(4)
     return propertyNameList
