@@ -1,25 +1,25 @@
-import traceback
 import PySimpleGUI as sg
 from excel import getFullDataFromFile
-import asyncio
 
 
-async def updateCount(newCount):
-    window["count"].update(value=newCount)
+def updateCount(newCount):
+    window["count"].update(value=f"{newCount}%")
+    window.refresh()
+
 
 layout = [
     [sg.Text("Select a file:")],
     [sg.InputText(key="file_path"), sg.FileBrowse()],
     [sg.Text("Select a state:\n(optional)"),
-     sg.DropDown(values=['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
+     sg.DropDown(values=['(all states)', 'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
                          'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
                          'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
                          'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
-                         'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'], key="state_drop_down")],
+                         'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'], default_value='(all states)', key="state_drop_down")],
     [sg.Button("Load"), sg.Button("Exit")],
     [sg.Text("Enter Output File Name:\n(full file path)"), sg.InputText(
         key="default_file", default_text="~/downloads/output.xlsx")],
-    [sg.Text("running...", key="prop_message", visible=False),
+    [sg.Text("Percent complete:", key="prop_message", visible=False),
      sg.Text("", key="count", visible=False)]
 ]
 
@@ -35,14 +35,13 @@ while True:
         filePath = values["file_path"]
         fileName = values["default_file"]
         stateCode = values["state_drop_down"]
-        sg.popup(f"Selected file: {filePath}")
 
         window["prop_message"].update(visible=True)
         window["count"].update(visible=True)
         window.refresh()
 
         completionCode, numProps, numErrors = getFullDataFromFile(
-            filePath, fileName, stateCode)
+            filePath, fileName, stateCode, updateCount)
 
         window["prop_message"].update(visible=False)
         window["count"].update(visible=False)
