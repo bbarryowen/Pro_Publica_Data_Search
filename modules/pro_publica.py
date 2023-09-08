@@ -24,19 +24,18 @@ def getNames(url):
 
     if href is None:
         print(f"could not find button for {url}")
-        return None, None, None
+        return None, None, None, None, None
     if formType != str(990):
         print("program not yet capable of handling non 990 forms")
-        return None, None, None
+        return None, None, None, None, None
 
     xmlURL = f'https://projects.propublica.org{href}'
     response = requests.get(xmlURL, allow_redirects=True)
     if response.status_code == 200:
         xmlContent = response.content
-        # print(xmlContent)
     else:
         print(f"failed to fetch xml file {response.status_code}")
-        return None, None, None
+        return None, None, None, None, None
     root = ET.fromstring(xmlContent)
 
     namespace = {'irs': 'http://www.irs.gov/efile'}
@@ -59,7 +58,26 @@ def getNames(url):
         './/irs:TaxPeriodBeginDt', namespaces=namespace)
     year = yearElement.text[0:4]
 
-    return names, year, count
+    irs990_element = root.find(".//irs:IRS990", namespaces=namespace)
+
+    if irs990_element is not None:
+        prevRevenueElement = irs990_element.find(
+            ".//irs:PYTotalRevenueAmt", namespaces=namespace)
+        currRevenueElement = irs990_element.find(
+            ".//irs:CYTotalRevenueAmt", namespaces=namespace)
+        if prevRevenueElement is not None:
+            prevRevenue = prevRevenueElement.text
+        else:
+            prevRevenue = None
+        if currRevenueElement is not None:
+            currRevenue = currRevenueElement.text
+        else:
+            currRevenue = None
+    else:
+        prevRevenue = None
+        currRevenue = None
+
+    return names, year, count, prevRevenue, currRevenue
 
 
 def getBoardMemebers(names: str):
