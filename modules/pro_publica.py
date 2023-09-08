@@ -23,10 +23,6 @@ def getNames(url):
     href, formType = searchByClass(pageURL)
 
     if href is None:
-        print(f"could not find button for {url}")
-        return None, None, None, None, None
-    if formType != str(990):
-        print("program not yet capable of handling non 990 forms")
         return None, None, None, None, None
 
     xmlURL = f'https://projects.propublica.org{href}'
@@ -36,6 +32,37 @@ def getNames(url):
     else:
         print(f"failed to fetch xml file {response.status_code}")
         return None, None, None, None, None
+    if formType == str(990):
+        return get990Info(xmlContent)
+    else:
+        return get990ezInfo(xmlContent)
+
+
+def get990ezInfo(xmlContent):
+    # <OfficerDirectorTrusteeEmplGrp>
+    root = ET.fromstring(xmlContent)
+
+    namespace = {'irs': 'http://www.irs.gov/efile'}
+
+    nameElements = root.findall(
+        './/irs:OfficerDirectorTrusteeEmplGrp', namespaces=namespace)
+    count = 0
+    names = []
+    for element in nameElements:
+        person = element.find('irs:PersonNm', namespaces=namespace)
+        if person is None:
+            count += 1
+        else:
+            names.append(person.text)
+
+    yearElement: str = root.find(
+        './/irs:TaxPeriodBeginDt', namespaces=namespace)
+    year = yearElement.text[0:4]
+
+    return names, year, count, None, None
+
+
+def get990Info(xmlContent):
     root = ET.fromstring(xmlContent)
 
     namespace = {'irs': 'http://www.irs.gov/efile'}
@@ -50,9 +77,6 @@ def getNames(url):
             count += 1
         else:
             names.append(person.text)
-
-    if count > 0:
-        print(f"{count} board members were not recorded for url: {url}")
 
     yearElement: str = root.find(
         './/irs:TaxPeriodBeginDt', namespaces=namespace)

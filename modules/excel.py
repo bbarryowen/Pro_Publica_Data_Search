@@ -1,14 +1,11 @@
 import os
 import pandas as pd
 from pro_publica import getBoardMemebers, getNames
-from sys import exit
-import asyncio
 
 
 def getCompanyInfo(propertyName: str):
     index = getIndex(df1, "Property Name", propertyName)
     if isinstance(index, str):
-        print(f"error: property: {propertyName} is not in file")
         return None, None
 
     companyInfo = {"A": ["#", df1.loc[index, "#"]],
@@ -24,14 +21,13 @@ def getCompanyInfo(propertyName: str):
                    "K": ["ProPublica Link", df1.loc[index, "ProPublica Link"]]}
 
     if not isinstance(companyInfo["K"][1], str):
-        print(f"property: {propertyName} does not have link")
         errorProperties.append(f"{propertyName}: no link")
         return None, None
     names, year, notAdded, prevRevenue, currRevenue = getNames(
         companyInfo["K"][1])
 
     if names is None:
-        errorProperties.append(f"{propertyName}: no button or not 990")
+        errorProperties.append(f"{propertyName}: no button")
         return companyInfo, None
     if notAdded > 0:
         errorProperties.append(f"{propertyName}: {notAdded} names not added")
@@ -72,7 +68,7 @@ def getFullData(propertyName):
     return pd.concat([companyDF, boardHeadDF, boardDF, blankDF], ignore_index=True)
 
 
-def getFullDataFromFile(inFilePath, outFileName, state):
+def getFullDataFromFile(inFilePath, outFileName, state, callback):
     if not os.path.exists(inFilePath):
         return 8, None, None
     if not inFilePath.lower().endswith((".xlsx")):
@@ -81,15 +77,15 @@ def getFullDataFromFile(inFilePath, outFileName, state):
     if not os.path.exists(os.path.dirname(expandedPath)):
         return 4, None, None
     if not outFileName.lower().endswith((".xlsx")):
-        print("working")
         return 5, None, None
 
     global df1
     df1 = pd.read_excel(inFilePath)
 
-    if state != "":
+    if state != "(all states)":
         df1 = df1[df1["(Address) State"] == state]
     # needs function to check this
+    numProps, columns = df1.shape
     propertyList = getPropertyNames(df1)
     if isinstance(propertyList, int):
         return 6, None, None
@@ -98,10 +94,11 @@ def getFullDataFromFile(inFilePath, outFileName, state):
     errorProperties = ["Properties with errors:"]
     dfList = []
     count = 0
+    percent = 0
     for property in propertyList:
-        print(f"adding: {property}")
         count += 1
-        # await callback(count)
+        percent = count / numProps * 100
+        callback(int(percent))
         fullData = getFullData(property)
         if fullData is not None:
             dfList.append(fullData)
@@ -110,10 +107,8 @@ def getFullDataFromFile(inFilePath, outFileName, state):
         combinedDFs = pd.concat(dfList, ignore_index=True)
         try:
             combinedDFs.to_excel(outFileName, index=False, header=False)
-            print(f"Excel file saved successfully: {outFileName}")
-            return 0, len(propertyList), len(errorProperties)
+            return 0, len(propertyList), len(errorProperties) - 1
         except Exception as e:
-            print("Error while saving Excel file:", e)
             return 7, None, None
 
 
@@ -122,5 +117,4 @@ def getPropertyNames(inDF):
         propertyNameList = inDF["Property Name"]
         return propertyNameList
     except KeyError:
-        print(f"error: inputed file does not have column: 'Property Name' please review documentation.")
         return 4
