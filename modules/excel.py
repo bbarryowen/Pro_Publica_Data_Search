@@ -1,14 +1,14 @@
 import os
 import pandas as pd
-from pro_publica import getBoardMemebers, getNames
+from pro_publica import getNames
 
 
-def getCompanyInfo(propertyName: str):
+def getCompanyInfo(propertyName: str, df1):
     index = getIndex(df1, "Property Name", propertyName)
     if isinstance(index, str):
-        return None, None
+        return None, None, None, None
 
-    companyInfo = {"A": ["#", df1.loc[index, "#"]],
+    companyInfo = {"A": ["Property Number", df1.loc[index, "#"]],
                    "B": ["Owner Organization Name", df1.loc[index, "Owner Organization Name"]],
                    "C": ["Property Name", df1.loc[index, "Property Name"]],
                    "D": ["Project Category", df1.loc[index, "Project Category"]],
@@ -20,24 +20,28 @@ def getCompanyInfo(propertyName: str):
                    "J": ["(Address) Postal Code", df1.loc[index, "(Address) Postal Code"]],
                    "K": ["ProPublica Link", df1.loc[index, "ProPublica Link"]]}
 
+    errorProperty = None
+    missingProperty = None
+
     if not isinstance(companyInfo["K"][1], str):
-        errorProperties.append(f"{propertyName}: no link")
-        return None, None
-    names, year, notAdded, prevRevenue, currRevenue = getNames(
+        errorProperty = f"{propertyName}: no link"
+        return companyInfo, None, errorProperty, None
+
+    names, year, missing = getNames(
         companyInfo["K"][1])
 
-    if names is None:
-        errorProperties.append(f"{propertyName}: no button")
-        return companyInfo, None
-    if notAdded > 0:
-        errorProperties.append(f"{propertyName}: {notAdded} names not added")
-        return companyInfo, None
+    if names is None and year is None and missing is None:
+        errorProperty = f"{propertyName}: invalid link"
+        return companyInfo, None, errorProperty, None
+    if missing:
+        missingProperty = f"{propertyName}: unlisted names"
+    if names == []:
+        errorProperty = f"{propertyName}: no names"
 
-    companyInfo["L"] = ["Year", year]
-    companyInfo["M"] = ["Revenue(previous year)", prevRevenue]
-    companyInfo["N"] = ["Revenue(current year)", currRevenue]
+    companyInfo["L"] = ["Fiscal year", year]
     boardMembersInfo = getBoardMemebers(names)
-    return companyInfo, boardMembersInfo
+
+    return companyInfo, boardMembersInfo, errorProperty, missingProperty
 
 
 def getIndex(dataFrame, searchColumn: str, searchValue):
@@ -50,7 +54,7 @@ def getIndex(dataFrame, searchColumn: str, searchValue):
         return index
 
 
-def getFullData(propertyName):
+def getFullData(propertyName, df1):
     blankDict = {"A": [""], "B": [""], "C": [""], "D": [""], "E": [""],
                  "F": [""], "G": [""], "H": [""], "I": [""], "J": [""], "K": [""]}
     boardHeaderDict = {"A": ["Contact Name"], "B": [
@@ -58,14 +62,15 @@ def getFullData(propertyName):
     boardHeadDF = pd.DataFrame(boardHeaderDict)
     blankDF = pd.DataFrame(
         blankDict)
-    companyDict, boardMembersDict = getCompanyInfo(propertyName)
+    companyDict, boardMembersDict, erroredProp, missingNamesProp = getCompanyInfo(
+        propertyName, df1)
     companyDF = pd.DataFrame(companyDict)
 
     if boardMembersDict is None:
-        return pd.concat([companyDF, boardHeadDF, blankDF])
+        return pd.concat([companyDF, boardHeadDF, blankDF]), erroredProp, missingNamesProp
 
     boardDF = pd.DataFrame(boardMembersDict)
-    return pd.concat([companyDF, boardHeadDF, boardDF, blankDF], ignore_index=True)
+    return pd.concat([companyDF, boardHeadDF, boardDF, blankDF], ignore_index=True), erroredProp, missingNamesProp
 
 
 def getFullDataFromFile(inFilePath, outFileName, state, callback):
@@ -79,35 +84,43 @@ def getFullDataFromFile(inFilePath, outFileName, state, callback):
     if not outFileName.lower().endswith((".xlsx")):
         return 5, None, None
 
-    global df1
     df1 = pd.read_excel(inFilePath)
+    if "Property Number" in df1.columns or "#" not in df1.columns or "Owner Organization Name" not in df1.columns or "Property Name" not in df1.columns or "Project Category" not in df1.columns or "Owner Company Type" not in df1.columns or "Projects Units" not in df1.columns or "(Address) Line 1" not in df1.columns or "(Address) City" not in df1.columns or "(Address) State" not in df1.columns or "(Address) Postal Code" not in df1.columns or "ProPublica Link" not in df1.columns:
+        return 6, None, None
 
     if state != "(all states)":
         df1 = df1[df1["(Address) State"] == state]
-    # needs function to check this
-    numProps, columns = df1.shape
-    propertyList = getPropertyNames(df1)
-    if isinstance(propertyList, int):
-        return 6, None, None
 
-    global errorProperties
-    errorProperties = ["Properties with errors:"]
+    propertyList = getPropertyNames(df1)
+
+    numProps, columns = df1.shape
+
+    errorProperties = []
+    missingProperties = []
+
     dfList = []
     count = 0
     percent = 0
     for property in propertyList:
         count += 1
         percent = count / numProps * 100
-        callback(int(percent))
-        fullData = getFullData(property)
+        fullData, errorProp, missedNamesProp = getFullData(property, df1)
+        if errorProp is not None:
+            errorProperties.append(errorProp)
+        if missedNamesProp is not None:
+            missingProperties.append(missedNamesProp)
         if fullData is not None:
             dfList.append(fullData)
+        callback(int(percent))
+
     if len(dfList) != 0:
-        dfList.append(pd.DataFrame({"A": errorProperties}))
+        endMessage = ['Properties with errors:'] + errorProperties + \
+            [""] + ['Properties with un-listed names:'] + missingProperties
+        dfList.append(pd.DataFrame({"A": endMessage}))
         combinedDFs = pd.concat(dfList, ignore_index=True)
         try:
             combinedDFs.to_excel(outFileName, index=False, header=False)
-            return 0, len(propertyList), len(errorProperties) - 1
+            return 0, len(propertyList), len(errorProperties)
         except Exception as e:
             return 7, None, None
 
@@ -118,3 +131,7 @@ def getPropertyNames(inDF):
         return propertyNameList
     except KeyError:
         return 4
+
+
+def getBoardMemebers(names: str):
+    return {"A": names, "B": None, "C": None, "D": None, "E": None}
